@@ -10,69 +10,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
-type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
-}
-
-type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
-}
-
-type Pair struct {
-    Key   string
-    Value string
-}
-
-type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
-}type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
-}
-
-type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
-}
-
-type Pair struct {
-    Key   string
-    Value string
-}
-
-type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
-}
 
 type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
-}
-
-type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
-}
-
-type Pair struct {
-    Key   string
-    Value string
-}
-
-type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
-}type MapTask struct {
     M, R       int    // total number of map and reduce tasks
     N          int    // map task number, 0-based
     SourceHost string // address of host with map input file
@@ -148,7 +87,7 @@ func createDatabase(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func splitDatabase(source string, paths []string, zip bool) error {
+func splitDatabase(source string, paths []string) error {
 	db, err := openDatabase(source)
 	if err != nil {
 		return err
@@ -170,9 +109,6 @@ func splitDatabase(source string, paths []string, zip bool) error {
 				db.Close()
 			}
 			outs[i] = nil
-			if zip {
-				compress(paths[i], true)
-			}
 		}
 	}()
 	for _, path := range paths {
