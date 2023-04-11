@@ -87,7 +87,7 @@ func createDatabase(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func splitDatabase(source string, paths []string, zip bool) error {
+func splitDatabase(source string, paths []string) error {
 	db, err := openDatabase(source)
 	if err != nil {
 		return err
@@ -109,9 +109,6 @@ func splitDatabase(source string, paths []string, zip bool) error {
 				db.Close()
 			}
 			outs[i] = nil
-			if zip {
-				compress(paths[i], true)
-			}
 		}
 	}()
 	for _, path := range paths {
