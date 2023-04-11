@@ -10,88 +10,27 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
-type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
-}
-
-type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
-}
-
-type Pair struct {
-    Key   string
-    Value string
-}
-
-type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
-}type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
-}
-
-type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
-}
-
-type Pair struct {
-    Key   string
-    Value string
-}
-
-type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
-}
 
 type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
+	M, R       int    // total number of map and reduce tasks
+	N          int    // map task number, 0-based
+	SourceHost string // address of host with map input file
 }
 
 type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
+	M, R        int      // total number of map and reduce tasks
+	N           int      // reduce task number, 0-based
+	SourceHosts []string // addresses of map workers
 }
 
 type Pair struct {
-    Key   string
-    Value string
+	Key   string
+	Value string
 }
 
 type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
-}type MapTask struct {
-    M, R       int    // total number of map and reduce tasks
-    N          int    // map task number, 0-based
-    SourceHost string // address of host with map input file
-}
-
-type ReduceTask struct {
-    M, R        int      // total number of map and reduce tasks
-    N           int      // reduce task number, 0-based
-    SourceHosts []string // addresses of map workers
-}
-
-type Pair struct {
-    Key   string
-    Value string
-}
-
-type Interface interface {
-    Map(key, value string, output chan<- Pair) error
-    Reduce(key string, values <-chan string, output chan<- Pair) error
+	Map(key, value string, output chan<- Pair) error
+	Reduce(key string, values <-chan string, output chan<- Pair) error
 }
 
 func openDatabase(path string) (*sql.DB, error) {
