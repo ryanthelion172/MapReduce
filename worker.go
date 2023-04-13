@@ -41,7 +41,7 @@ func makeURL(host, file string) string { return fmt.Sprintf("http://%s/data/%s",
 func (task *MapTask) Process(tempdir string, client Interface) error {
 	slice_of_output_files := make([]string, task.M)
 
-	// source_file := mapSourceFile(task.M)
+	source_file := mapSourceFile(task.M)
 	input_file := mapInputFile(task.M)
 	for i := 0; i < task.M; i++ {
 		slice_of_output_files[i] = mapOutputFile(i, task.R)
@@ -51,6 +51,8 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		log.Printf("error downloading the file with error:%d", err)
 		return err
 	}
+	splitDatabase(source_file, slice_of_output_files)
+	
 	// output_files, err := splitDatabase(task.SourceHost, outputDir, outputPattern string, m int)
 	return nil
 }
