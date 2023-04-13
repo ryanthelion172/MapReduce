@@ -1,4 +1,4 @@
-package mapreduce
+package main
 
 import (
 	"database/sql"
@@ -10,6 +10,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+
 
 func openDatabase(path string) (*sql.DB, error) {
 	if _, err := os.Stat(path); err != nil {
