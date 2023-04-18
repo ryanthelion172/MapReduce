@@ -43,7 +43,11 @@ func main() {
 		log.Print(err)
 	}
 	log.Print(database)
-
+	for _, v := range slice_of_output_files {
+		if err := os.Remove(v); err != nil {
+			log.Printf("Error removing file: %v", err)
+		}
+	}
 	// databases := make([]string, 5)
 	// databases[0] = makeURL("localhost:8080", "austen-0.db")
 	// databases[1] = makeURL("localhost:8080", "austen-1.db")
