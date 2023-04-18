@@ -19,7 +19,7 @@ func main() {
 	// tempdir := exPath + "/map"
 	slice_of_output_files := make([]string, m)
 	for i := 0; i < m; i++ {
-		slice_of_output_files[i] = mapOutputFile(i, r)
+		slice_of_output_files[i] = "tmp/" + mapOutputFile(i, r)
 	}
 	err = splitDatabase(source, slice_of_output_files)
 	if err != nil {
@@ -43,11 +43,11 @@ func main() {
 		log.Print(err)
 	}
 	log.Print(database)
-	for _, v := range slice_of_output_files {
+	/*for _, v := range slice_of_output_files {
 		if err := os.Remove(v); err != nil {
 			log.Printf("Error removing file: %v", err)
 		}
-	}
+	}*/
 	// databases := make([]string, 5)
 	// databases[0] = makeURL("localhost:8080", "austen-0.db")
 	// databases[1] = makeURL("localhost:8080", "austen-1.db")
