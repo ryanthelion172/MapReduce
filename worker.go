@@ -1,8 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"log"
+	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -38,21 +39,37 @@ func reducePartialFile(r int) string   { return fmt.Sprintf("reduce_%d_partial.d
 func reduceTempFile(r int) string      { return fmt.Sprintf("reduce_%d_temp.db", r) }
 func makeURL(host, file string) string { return fmt.Sprintf("http://%s/data/%s", host, file) }
 
-func (task *MapTask) Process(tempdir string, client Interface) error {
-	slice_of_output_files := make([]string, task.M)
+type output struct {
+	db     *sql.DB
+	insert *sql.Stmt
+	path   string
+}
 
-	source_file := mapSourceFile(task.M)
-	input_file := mapInputFile(task.M)
-	for i := 0; i < task.M; i++ {
-		slice_of_output_files[i] = mapOutputFile(i, task.R)
-	}
-	err := download(input_file, tempdir)
-	if err != nil {
-		log.Printf("error downloading the file with error:%d", err)
+func (task *MapTask) Process(tempdir string, client Interface) error {
+	inputPath := tempdir + "/austen.db"
+	inputURL := filepath.Join(tempdir, makeURL(task.SourceHost, inputPath))
+	if err := download(inputURL, inputPath); err != nil {
 		return err
 	}
-	splitDatabase(source_file, slice_of_output_files)
-	
-	// output_files, err := splitDatabase(task.SourceHost, outputDir, outputPattern string, m int)
+	inputfile, err := openDatabase(inputPath)
+	if err == nil {
+		return err
+	}
+	defer inputfile.Close()
+
+	outs := make([]*sql.DB, task.R)
+	for i := 0; i < task.R; i++ {
+		db, err := createDatabase(tempdir + "tmp/" + mapOutputFile(i, task.R))
+		if err != nil {
+			return err
+		}
+		outs[i] = db
+	}
+	defer func() {
+		for _, db := range outs {
+			db.Close()
+		}
+	}()
+
 	return nil
 }
