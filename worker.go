@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
@@ -41,55 +43,37 @@ func reducePartialFile(r int) string   { return fmt.Sprintf("reduce_%d_partial.d
 func reduceTempFile(r int) string      { return fmt.Sprintf("reduce_%d_temp.db", r) }
 func makeURL(host, file string) string { return fmt.Sprintf("http://%s/data/%s", host, file) }
 
-type Client struct{}
-
-func (c Client) Map(key, value string, output chan<- Pair) error {
-    defer close(output)
-    lst := strings.Fields(value)
-    for _, elt := range lst {
-        word := strings.Map(func(r rune) rune {
-            if unicode.IsLetter(r) || unicode.IsDigit(r) {
-                    return unicode.ToLower(r)
-            }
-            return -1
-        }, elt)
-        if len(word) > 0 {
-            output <- Pair{Key: word, Value: "1"}
-        }
-    }
-    return nil
-}
-
-func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) error {
-    defer close(output)
-    count := 0
-    for v := range values {
-        i, err := strconv.Atoi(v)
-        if err != nil {
-            return err
-        }
-        count += i
-    }
-    p := Pair{Key: key, Value: strconv.Itoa(count)}
-    output <- p
-    return nil
+type output struct {
+	db     *sql.DB
+	insert *sql.Stmt
+	path   string
 }
 
 func (task *MapTask) Process(tempdir string, client Interface) error {
-	slice_of_output_files := make([]string, task.M)
-
-	source_file := mapSourceFile(task.M)
-	input_file := mapInputFile(task.M)
-	for i := 0; i < task.M; i++ {
-		slice_of_output_files[i] = mapOutputFile(i, task.R)
-	}
-	err := download(input_file, tempdir)
-	if err != nil {
-		log.Printf("error downloading the file with error:%d", err)
+	inputPath := tempdir + "/austen.db"
+	inputURL := filepath.Join(tempdir, makeURL(task.SourceHost, inputPath))
+	if err := download(inputURL, inputPath); err != nil {
 		return err
 	}
-	splitDatabase(source_file, slice_of_output_files)
+	inputfile, err := openDatabase(inputPath)
+	if err == nil {
+		return err
+	}
+	defer inputfile.Close()
 
-	// output_files, err := splitDatabase(task.SourceHost, outputDir, outputPattern string, m int)
+	outs := make([]*sql.DB, task.R)
+	for i := 0; i < task.R; i++ {
+		db, err := createDatabase(tempdir + "tmp/" + mapOutputFile(i, task.R))
+		if err != nil {
+			return err
+		}
+		outs[i] = db
+	}
+	defer func() {
+		for _, db := range outs {
+			db.Close()
+		}
+	}()
+
 	return nil
 }

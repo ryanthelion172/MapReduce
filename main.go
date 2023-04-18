@@ -56,4 +56,26 @@ func main() {
 	// databases[4] = makeURL("localhost:8080", "austen-4.db")
 	// mergeDatabases(databases, "austen2.db", "temp.db")
 
+	// m := 9
+	// // r := 3
+	// ex, err := os.Executable()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// exPath := filepath.Dir(ex)
+	// source := exPath + "/austen.db"
+	// // tempdir := exPath + "/map"
+	// tempdir := filepath.Join(os.TempDir(), fmt.Sprintf("mapreduce.%d", os.Getpid()))
+	// defer os.RemoveAll(tempdir)
+	// log.Print(tempdir)
+	// slice_of_source_files := make([]string, m)
+	// for i := 0; i < m; i++ {
+	// 	slice_of_source_files[i] = "tmp/" + mapSourceFile(i)
+	// }
+
+	// err = splitDatabase(source, slice_of_source_files)
+	// if err != nil {
+	// 	log.Print(err)
+	// }
+
 }
