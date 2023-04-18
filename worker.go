@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
+	"unicode"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -38,6 +41,40 @@ func reducePartialFile(r int) string   { return fmt.Sprintf("reduce_%d_partial.d
 func reduceTempFile(r int) string      { return fmt.Sprintf("reduce_%d_temp.db", r) }
 func makeURL(host, file string) string { return fmt.Sprintf("http://%s/data/%s", host, file) }
 
+type Client struct{}
+
+func (c Client) Map(key, value string, output chan<- Pair) error {
+    defer close(output)
+    lst := strings.Fields(value)
+    for _, elt := range lst {
+        word := strings.Map(func(r rune) rune {
+            if unicode.IsLetter(r) || unicode.IsDigit(r) {
+                    return unicode.ToLower(r)
+            }
+            return -1
+        }, elt)
+        if len(word) > 0 {
+            output <- Pair{Key: word, Value: "1"}
+        }
+    }
+    return nil
+}
+
+func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) error {
+    defer close(output)
+    count := 0
+    for v := range values {
+        i, err := strconv.Atoi(v)
+        if err != nil {
+            return err
+        }
+        count += i
+    }
+    p := Pair{Key: key, Value: strconv.Itoa(count)}
+    output <- p
+    return nil
+}
+
 func (task *MapTask) Process(tempdir string, client Interface) error {
 	slice_of_output_files := make([]string, task.M)
 
@@ -52,7 +89,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		return err
 	}
 	splitDatabase(source_file, slice_of_output_files)
-	
+
 	// output_files, err := splitDatabase(task.SourceHost, outputDir, outputPattern string, m int)
 	return nil
 }
