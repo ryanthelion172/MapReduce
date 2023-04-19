@@ -19,7 +19,7 @@ func main() {
 	// tempdir := exPath + "/map"
 	slice_of_output_files := make([]string, m)
 	for i := 0; i < m; i++ {
-		slice_of_output_files[i] = "tmp/" + mapOutputFile(i, r)
+		slice_of_output_files[i] = mapOutputFile(i, r)
 	}
 	err = splitDatabase(source, slice_of_output_files)
 	if err != nil {

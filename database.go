@@ -118,7 +118,6 @@ func splitDatabase(source string, paths []string) error {
 			log.Printf("error scanning row value: %v", err)
 			return err
 		}
-
 		// round-robin through the output databases
 		insert := inserts[dbi]
 		if _, err := insert.Exec(key, value); err != nil {
