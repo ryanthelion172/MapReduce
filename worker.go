@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -51,25 +52,72 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	if err := download(inputURL, inputPath); err != nil {
 		return err
 	}
-	inputfile, err := openDatabase(inputPath)
+	db, err := openDatabase(inputPath)
 	if err == nil {
 		return err
 	}
-	defer inputfile.Close()
+	defer db.Close()
 
-	outs := make([]*sql.DB, task.R)
+	var outs []*sql.DB
+	var inserts []*sql.Stmt
+	defer func() {
+		for i, insert := range inserts {
+			if insert != nil {
+				insert.Close()
+			}
+			inserts[i] = nil
+		}
+		for i, db := range outs {
+			if db != nil {
+				db.Close()
+			}
+			outs[i] = nil
+		}
+	}()
+	paths := make([]string, task.R)
 	for i := 0; i < task.R; i++ {
-		db, err := createDatabase(tempdir + "tmp/" + mapOutputFile(i, task.R))
+		paths[i] = "tmp/" + mapOutputFile(i, task.R)
+	}
+	for _, path := range paths {
+		out, err := createDatabase(path)
 		if err != nil {
 			return err
 		}
-		outs[i] = db
-	}
-	defer func() {
-		for _, db := range outs {
-			db.Close()
+		outs = append(outs, out)
+		insert, err := out.Prepare("insert into pairs (key, value) values (?, ?)")
+		if err != nil {
+			log.Printf("error preparing statement for output database: %v", err)
+			return err
 		}
-	}()
+		inserts = append(inserts, insert)
+	}
+
+	// process input pairs
+	dbi := 0
+	rows, err := db.Query("select key, value from pairs")
+	if err != nil {
+		log.Printf("error in select query from database to split: %v", err)
+		return err
+	}
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			log.Printf("error scanning row value: %v", err)
+			return err
+		}
+
+		// round-robin through the output databases
+		insert := inserts[dbi]
+		if _, err := insert.Exec(key, value); err != nil {
+			log.Printf("db error inserting row to output database: %v", err)
+			return err
+		}
+		dbi = (dbi + 1) % len(inserts)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("db error iterating over inputs: %v", err)
+		return err
+	}
 
 	return nil
 }

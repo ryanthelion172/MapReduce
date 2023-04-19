@@ -9,7 +9,6 @@ import (
 
 func main() {
 	m := 5
-	r := 6
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -17,18 +16,18 @@ func main() {
 	exPath := filepath.Dir(ex)
 	source := exPath + "/austen.db"
 	// tempdir := exPath + "/map"
-	slice_of_output_files := make([]string, m)
+	slice_of_source_files := make([]string, m)
 	for i := 0; i < m; i++ {
-		slice_of_output_files[i] = mapOutputFile(i, r)
+		slice_of_source_files[i] = "tmp/" + mapSourceFile(i)
 	}
-	err = splitDatabase(source, slice_of_output_files)
+	err = splitDatabase(source, slice_of_source_files)
 	if err != nil {
 		log.Print(err)
 	}
 
 	urls := make([]string, m)
 	for i := 0; i < m; i++ {
-		urls[i] = makeURL("localhost:8080", slice_of_output_files[i])
+		urls[i] = makeURL("localhost:8080", slice_of_source_files[i])
 	}
 	go func() {
 		address := ":8080"
@@ -43,11 +42,11 @@ func main() {
 		log.Print(err)
 	}
 	log.Print(database)
-	/*for _, v := range slice_of_output_files {
+	for _, v := range slice_of_source_files {
 		if err := os.Remove(v); err != nil {
 			log.Printf("Error removing file: %v", err)
 		}
-	}*/
+	}
 	// databases := make([]string, 5)
 	// databases[0] = makeURL("localhost:8080", "austen-0.db")
 	// databases[1] = makeURL("localhost:8080", "austen-1.db")
