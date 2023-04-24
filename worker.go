@@ -134,8 +134,3 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	return nil
 }
 
-type Client struct{}
-
-func (c Client) Map(key, value string, output chan<- Pair) error {
-	return nil
-}
