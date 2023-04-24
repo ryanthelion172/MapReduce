@@ -12,6 +12,7 @@ import (
 
 func main() {
 	m := 5
+	r := 3
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -27,10 +28,18 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-
-	urls := make([]string, m)
+	type Client struct{}
 	for i := 0; i < m; i++ {
-		urls[i] = makeURL("localhost:8080", slice_of_source_files[i])
+		url := makeURL("localhost:8080", slice_of_source_files[i])
+		map_thing := MapTask{
+			M:          m,
+			R:          r,
+			N:          i,
+			SourceHost: url,
+		}
+
+		var myInterface Interface
+		map_thing.Process(exPath, myInterface)
 	}
 
 	go func() {
@@ -41,16 +50,16 @@ func main() {
 			log.Printf("Error in HTTP server for %s: %v", address, err)
 		}
 	}()
-	database, err := mergeDatabases(urls, "final_map.db", "temp.db")
-	if err != nil {
-		log.Print(err)
-	}
-	log.Print(database)
-	for _, v := range slice_of_source_files {
-		if err := os.Remove(v); err != nil {
-			log.Printf("Error removing file: %v", err)
-		}
-	}
+	// database, err := mergeDatabases(urls, "final_map.db", "temp.db")
+	// if err != nil {
+	// 	log.Print(err)
+	// }
+	// log.Print(database)
+	// for _, v := range slice_of_source_files {
+	// 	if err := os.Remove(v); err != nil {
+	// 		log.Printf("Error removing file: %v", err)
+	// 	}
+	// }
 }
 
 type Client struct{}
@@ -71,7 +80,6 @@ func (c Client) Map(key, value string, output chan<- Pair) error {
 	}
 	return nil
 }
-
 func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) error {
 	defer close(output)
 	count := 0
