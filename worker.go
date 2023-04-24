@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"hash/fnv"
 	"log"
 	"path/filepath"
 
@@ -110,12 +111,14 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 				log.Printf("error calling map: %v", err)
 			}
 		}
-	} ()
-	var isOkay error
-	for isOkay != nil {
+	}()
+	for {
 		pair, isOkay := <-messages
+		if isOkay != true {
+			break
+		}
 		hash := fnv.New32()
-		hash.write([]byte(pair.Key))
+		hash.Write([]byte(pair.Key))
 		r := int(hash.Sum32() % uint32(task.R))
 		insert := inserts[r]
 		if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
@@ -131,9 +134,8 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	return nil
 }
 
-
 type Client struct{}
 
-func (c Client) Map(key, value string, output chan<-pair) error {
-	return nil;
+func (c Client) Map(key, value string, output chan<- Pair) error {
+	return nil
 }
