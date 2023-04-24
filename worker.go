@@ -93,31 +93,47 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	}
 
 	// process input pairs
-	dbi := 0
 	rows, err := db.Query("select key, value from pairs")
 	if err != nil {
 		log.Printf("error in select query from database to split: %v", err)
 		return err
 	}
-	for rows.Next() {
-		var key, value string
-		if err := rows.Scan(&key, &value); err != nil {
-			log.Printf("error scanning row value: %v", err)
-			return err
+	messages := make(chan Pair)
+	go func() {
+		for rows.Next() {
+			var key, value string
+			if err := rows.Scan(&key, &value); err != nil {
+				log.Printf("error scanning row value: %v", err)
+			}
+			// call client.map here
+			if err := client.Map(key, value, messages); err != nil {
+				log.Printf("error calling map: %v", err)
+			}
 		}
-
-		// round-robin through the output databases
-		insert := inserts[dbi]
-		if _, err := insert.Exec(key, value); err != nil {
-			log.Printf("db error inserting row to output database: %v", err)
-			return err
+	} ()
+	var isOkay error
+	for isOkay != nil {
+		pair, isOkay := <-messages
+		hash := fnv.New32()
+		hash.write([]byte(pair.Key))
+		r := int(hash.Sum32() % uint32(task.R))
+		insert := inserts[r]
+		if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
+			log.Printf("db error inserting row to output database: %v ", err)
 		}
-		dbi = (dbi + 1) % len(inserts)
 	}
+
 	if err := rows.Err(); err != nil {
 		log.Printf("db error iterating over inputs: %v", err)
 		return err
 	}
 
 	return nil
+}
+
+
+type Client struct{}
+
+func (c Client) Map(key, value string, output chan<-pair) error {
+	return nil;
 }
