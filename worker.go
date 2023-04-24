@@ -111,11 +111,11 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 			}
 		}
 	} ()
-	var isOkay error
-	for isOkay != nil {
+	isOkay := true
+	for isOkay != true {
 		pair, isOkay := <-messages
 		hash := fnv.New32()
-		hash.write([]byte(pair.Key))
+		hash.Write([]byte(pair.Key))
 		r := int(hash.Sum32() % uint32(task.R))
 		insert := inserts[r]
 		if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
@@ -132,8 +132,3 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 }
 
 
-type Client struct{}
-
-func (c Client) Map(key, value string, output chan<-pair) error {
-	return nil;
-}
