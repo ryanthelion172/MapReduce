@@ -99,9 +99,9 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		log.Printf("error in select query from database to split: %v", err)
 		return err
 	}
-	messages := make(chan Pair)
-	go func() {
-		for rows.Next() {
+	for rows.Next() {
+		messages := make(chan Pair)
+		go func() {
 			var key, value string
 			if err := rows.Scan(&key, &value); err != nil {
 				log.Printf("error scanning row value: %v", err)
@@ -110,20 +110,20 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 			if err := client.Map(key, value, messages); err != nil {
 				log.Printf("error calling map: %v", err)
 			}
-		}
-	}()
-	for {
-		pair, isOkay := <-messages
-		if isOkay != true {
-			break
-		}
-		hash := fnv.New32()
-		hash.Write([]byte(pair.Key))
-		r := int(hash.Sum32() % uint32(task.R))
-		insert := inserts[r]
-		log.Print(insert)
-		if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
-			log.Printf("db error inserting row to output database: %v ", err)
+		}()
+		for {
+			pair, isOkay := <-messages
+			if isOkay != true {
+				break
+			}
+			hash := fnv.New32()
+			hash.Write([]byte(pair.Key))
+			r := int(hash.Sum32() % uint32(task.R))
+			insert := inserts[r]
+			log.Print(insert)
+			if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
+				log.Printf("db error inserting row to output database: %v ", err)
+			}
 		}
 	}
 
@@ -144,3 +144,5 @@ func (task *ReduceTask) Process(tempdir string, client Interface) {
 	//create output database
 	//processs all the pairs
 }
+
+

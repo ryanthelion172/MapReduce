@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
-	"unicode"
+	//"strconv"
+	//"strings"
+	//"unicode"
 )
 
 func main() {
@@ -94,6 +94,7 @@ func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) err
 	output <- p
 	return nil
 }
+
 
 // databases := make([]string, 5)
 // databases[0] = makeURL("localhost:8080", "austen-0.db")
