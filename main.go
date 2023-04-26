@@ -30,12 +30,12 @@ func main() {
 	}
 	type Client struct{}
 	for i := 0; i < m; i++ {
-		url := makeURL("localhost:8080", slice_of_source_files[i])
+		//url := makeURL("localhost:8080", slice_of_source_files[i])
 		map_thing := MapTask{
 			M:          m,
 			R:          r,
 			N:          i,
-			SourceHost: url,
+			SourceHost: "/" + slice_of_source_files[i],
 		}
 
 		var myInterface Interface

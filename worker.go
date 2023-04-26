@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log"
-	"path/filepath"
+	//"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -48,13 +48,13 @@ type output struct {
 }
 
 func (task *MapTask) Process(tempdir string, client Interface) error {
-	inputPath := tempdir + "/austen.db"
-	inputURL := filepath.Join(tempdir, makeURL(task.SourceHost, inputPath))
-	if err := download(inputURL, inputPath); err != nil {
-		return err
-	}
+	inputPath := tempdir + task.SourceHost
+	//inputURL := filepath.Join(tempdir, makeURL(task.SourceHost, inputPath))
+	//if err := download(inputURL, inputPath); err != nil {
+	//	return err
+	//}
 	db, err := openDatabase(inputPath)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	defer db.Close()
@@ -77,7 +77,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	}()
 	paths := make([]string, task.R)
 	for i := 0; i < task.R; i++ {
-		paths[i] = "tmp/" + mapOutputFile(i, task.R)
+		paths[i] = mapOutputFile(task.N , i)
 	}
 	for _, path := range paths {
 		out, err := createDatabase(path)
@@ -121,6 +121,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		hash.Write([]byte(pair.Key))
 		r := int(hash.Sum32() % uint32(task.R))
 		insert := inserts[r]
+		log.Print(insert)
 		if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
 			log.Printf("db error inserting row to output database: %v ", err)
 		}
@@ -134,3 +135,12 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	return nil
 }
 
+func (task *ReduceTask) Process(tempdir string, client Interface) {
+	//create input database (merge)
+	paths := make([]string, task.M)
+	for i := 0; i < task.M; i++ {
+		paths[i] = makeURL("localhost:8080", mapOutputFile(i, task.M))
+	}
+	//create output database
+	//processs all the pairs
+}
