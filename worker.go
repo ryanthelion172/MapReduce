@@ -120,7 +120,6 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 			hash.Write([]byte(pair.Key))
 			r := int(hash.Sum32() % uint32(task.R))
 			insert := inserts[r]
-			log.Print(insert)
 			if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
 				log.Printf("db error inserting row to output database: %v ", err)
 			}

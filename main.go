@@ -5,62 +5,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	//"strconv"
-	//"strings"
-	//"unicode"
+	"strconv"
+	"strings"
+	"unicode"
 )
-
-func main() {
-	m := 5
-	r := 3
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	source := exPath + "/austen.db"
-	// tempdir := exPath + "/map"
-	slice_of_source_files := make([]string, m)
-	for i := 0; i < m; i++ {
-		slice_of_source_files[i] = mapSourceFile(i)
-	}
-	err = splitDatabase(source, slice_of_source_files)
-	if err != nil {
-		log.Print(err)
-	}
-	type Client struct{}
-	for i := 0; i < m; i++ {
-		//url := makeURL("localhost:8080", slice_of_source_files[i])
-		map_thing := MapTask{
-			M:          m,
-			R:          r,
-			N:          i,
-			SourceHost: "/" + slice_of_source_files[i],
-		}
-
-		var myInterface Interface
-		map_thing.Process(exPath, myInterface)
-	}
-
-	go func() {
-		address := ":8080"
-		tempdir := exPath
-		http.Handle("/data/", http.StripPrefix("/data", http.FileServer(http.Dir(tempdir))))
-		if err := http.ListenAndServe(address, nil); err != nil {
-			log.Printf("Error in HTTP server for %s: %v", address, err)
-		}
-	}()
-	// database, err := mergeDatabases(urls, "final_map.db", "temp.db")
-	// if err != nil {
-	// 	log.Print(err)
-	// }
-	// log.Print(database)
-	// for _, v := range slice_of_source_files {
-	// 	if err := os.Remove(v); err != nil {
-	// 		log.Printf("Error removing file: %v", err)
-	// 	}
-	// }
-}
 
 type Client struct{}
 
@@ -93,6 +41,58 @@ func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) err
 	p := Pair{Key: key, Value: strconv.Itoa(count)}
 	output <- p
 	return nil
+}
+
+
+func main() {
+	m := 5
+	r := 3
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	source := exPath + "/austen.db"
+	// tempdir := exPath + "/map"
+	slice_of_source_files := make([]string, m)
+	for i := 0; i < m; i++ {
+		slice_of_source_files[i] = mapSourceFile(i)
+	}
+	err = splitDatabase(source, slice_of_source_files)
+	if err != nil {
+		log.Print(err)
+	}
+	for i := 0; i < m; i++ {
+		//url := makeURL("localhost:8080", slice_of_source_files[i])
+		map_thing := MapTask{
+			M:          m,
+			R:          r,
+			N:          i,
+			SourceHost: "/" + slice_of_source_files[i],
+		}
+
+		var myInterface Interface = &Client{}
+		map_thing.Process(exPath, myInterface)
+	}
+
+	go func() {
+		address := ":8080"
+		tempdir := exPath
+		http.Handle("/data/", http.StripPrefix("/data", http.FileServer(http.Dir(tempdir))))
+		if err := http.ListenAndServe(address, nil); err != nil {
+			log.Printf("Error in HTTP server for %s: %v", address, err)
+		}
+	}()
+	// database, err := mergeDatabases(urls, "final_map.db", "temp.db")
+	// if err != nil {
+	// 	log.Print(err)
+	// }
+	// log.Print(database)
+	// for _, v := range slice_of_source_files {
+	// 	if err := os.Remove(v); err != nil {
+	// 		log.Printf("Error removing file: %v", err)
+	// 	}
+	// }
 }
 
 
