@@ -62,7 +62,9 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
+	var myInterface Interface = &Client{}
 	for i := 0; i < m; i++ {
+		log.Printf("%d Map", i)
 		//url := makeURL("localhost:8080", slice_of_source_files[i])
 		map_thing := MapTask{
 			M:          m,
@@ -71,10 +73,8 @@ func main() {
 			SourceHost: "/" + slice_of_source_files[i],
 		}
 
-		var myInterface Interface = &Client{}
 		map_thing.Process(exPath, myInterface)
 	}
-
 	go func() {
 		address := ":8080"
 		tempdir := exPath
@@ -83,6 +83,21 @@ func main() {
 			log.Printf("Error in HTTP server for %s: %v", address, err)
 		}
 	}()
+	for i := 0; i < r; i++ {
+		log.Printf("%d Reduce", i)
+		sourceHost := make([]string, m)
+		for j := range sourceHost {
+			sourceHost[j] = mapOutputFile(j, i)
+		}
+		reduce_thing := ReduceTask {
+			M: m,
+			R: r,
+			N: i,
+			SourceHosts: sourceHost,
+		}
+		reduce_thing.Process(exPath, myInterface)
+	}
+
 	// database, err := mergeDatabases(urls, "final_map.db", "temp.db")
 	// if err != nil {
 	// 	log.Print(err)

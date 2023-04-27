@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log"
+	"os"
 	//"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -134,14 +135,48 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	return nil
 }
 
-func (task *ReduceTask) Process(tempdir string, client Interface) {
+func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	//create input database (merge)
 	paths := make([]string, task.M)
 	for i := 0; i < task.M; i++ {
-		paths[i] = makeURL("localhost:8080", mapOutputFile(i, task.M))
+		paths[i] = makeURL("localhost:8080", task.SourceHosts[i])
+	}
+	mergeDatabases(paths, reduceInputFile(task.N), reduceTempFile(task.N))
+	for _, path := range paths {
+		os.Remove(path)
 	}
 	//create output database
+	var outs []*sql.DB
+	var inserts []*sql.Stmt
+	defer func() {
+		for i, insert := range inserts {
+			if insert != nil {
+				insert.Close()
+			}
+			inserts[i] = nil
+		}
+		for i, db := range outs {
+			if db != nil {
+				db.Close()
+			}
+			outs[i] = nil
+		}
+	}()
+	out, err := createDatabase(reduceOutputFile(task.N))
+	if err != nil {
+		log.Printf("error creating databaseL %v", err)
+		return err
+	}
+	outs = append(outs, out)
+	insert, err := out.Prepare("insert into pairs (key, value) values (?, ?)")
+	if err != nil {
+		log.Printf("error preparing statement for output database: %v", err)
+		return err
+	}
+	inserts = append(inserts, insert)
 	//processs all the pairs
+
+	return nil
 }
 
 
