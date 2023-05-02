@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -45,6 +46,7 @@ func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) err
 
 
 func main() {
+	runtime.GOMAXPROCS(1)
 	m := 5
 	r := 3
 	ex, err := os.Executable()

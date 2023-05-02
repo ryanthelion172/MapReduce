@@ -143,7 +143,7 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	}
 	mergeDatabases(paths, reduceInputFile(task.N), reduceTempFile(task.N))
 	for _, path := range paths {
-		os.Remove(path)
+		defer os.Remove(path)
 	}
 	//create output database
 	var outs []*sql.DB
