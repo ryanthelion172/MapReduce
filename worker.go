@@ -191,40 +191,49 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	}
 
 	lastkey := ""
-	for rows.Next() {
-		messages := make(chan Pair)
-		values := make(chan string)
-		go func() {
-			var key, value string
+	valChan := make(chan string)
+	messages := make(chan Pair)
 
-			if err := rows.Scan(&key, &value); err != nil {
-				log.Printf("error scanning row value: %v", err)
-			}
-			if lastkey == key || lastkey == "" {
-				lastkey = key
-				values <- value
-			} else {
-				close(values)
-				if err := client.Reduce(key, values, messages); err != nil {
+	for rows.Next() {
+
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			log.Printf("error scanning row value: %v", err)
+		}
+
+		if lastkey == "" {
+			lastkey = key
+			go func() {
+				if err := client.Reduce(key, valChan, messages); err != nil {
 					log.Printf("error calling map: %v", err)
 				}
-			}
+			}()
+			valChan <- value
+			continue
 
-		}()
-
-		for {
-			pair, isOkay := <-messages
-			if isOkay != true {
-				break
-			}
-			hash := fnv.New32()
-			hash.Write([]byte(pair.Key))
-			r := int(hash.Sum32() % uint32(task.R))
-			insert := inserts[r]
-			if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
+		} else if lastkey != key {
+			lastkey = key
+			close(valChan)
+			output, _ := <-messages
+			if _, err := insert.Exec(output.Key, output.Value); err != nil {
 				log.Printf("db error inserting row to output database: %v ", err)
 			}
+			valChan = make(chan string)
+			messages = make(chan Pair)
+			go func() {
+				if err := client.Reduce(key, valChan, messages); err != nil {
+					log.Printf("error calling map: %v", err)
+				}
+			}()
+
 		}
+		// log.Println("key:", key, "value:", value)
+		valChan <- value
 	}
+	if err := rows.Err(); err != nil {
+		log.Printf("db error iterating over inputs: %v", err)
+		return err
+	}
+
 	return nil
 }

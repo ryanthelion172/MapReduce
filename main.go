@@ -43,10 +43,10 @@ func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) err
 	return nil
 }
 
-
 func main() {
-	m := 5
-	r := 3
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	m := 1
+	r := 1
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -89,13 +89,21 @@ func main() {
 		for j := range sourceHost {
 			sourceHost[j] = mapOutputFile(j, i)
 		}
-		reduce_thing := ReduceTask {
-			M: m,
-			R: r,
-			N: i,
+		reduce_thing := ReduceTask{
+			M:           m,
+			R:           r,
+			N:           i,
 			SourceHosts: sourceHost,
 		}
 		reduce_thing.Process(exPath, myInterface)
+	}
+	paths := make([]string, r)
+	for i := 0; i < r; i++ {
+		paths[i] = makeURL("localhost:8080", reduceOutputFile(i))
+	}
+	_, err = mergeDatabases(paths, exPath+"final.db", reduceTempFile(r))
+	if err != nil {
+		log.Print(err)
 	}
 
 	// database, err := mergeDatabases(urls, "final_map.db", "temp.db")
@@ -109,7 +117,6 @@ func main() {
 	// 	}
 	// }
 }
-
 
 // databases := make([]string, 5)
 // databases[0] = makeURL("localhost:8080", "austen-0.db")
