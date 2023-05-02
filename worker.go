@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"log"
 	"os"
+
 	//"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -78,7 +79,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 	}()
 	paths := make([]string, task.R)
 	for i := 0; i < task.R; i++ {
-		paths[i] = mapOutputFile(task.N , i)
+		paths[i] = mapOutputFile(task.N, i)
 	}
 	for _, path := range paths {
 		out, err := createDatabase(path)
@@ -93,14 +94,16 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		}
 		inserts = append(inserts, insert)
 	}
-
+	num_of_inserts := 0
 	// process input pairs
 	rows, err := db.Query("select key, value from pairs")
 	if err != nil {
 		log.Printf("error in select query from database to split: %v", err)
 		return err
 	}
+	map_task_count := 0
 	for rows.Next() {
+		map_task_count += 1
 		messages := make(chan Pair)
 		go func() {
 			var key, value string
@@ -112,6 +115,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 				log.Printf("error calling map: %v", err)
 			}
 		}()
+
 		for {
 			pair, isOkay := <-messages
 			if isOkay != true {
@@ -121,6 +125,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 			hash.Write([]byte(pair.Key))
 			r := int(hash.Sum32() % uint32(task.R))
 			insert := inserts[r]
+			num_of_inserts += 1
 			if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
 				log.Printf("db error inserting row to output database: %v ", err)
 			}
@@ -131,7 +136,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		log.Printf("db error iterating over inputs: %v", err)
 		return err
 	}
-
+	log.Print("map task processed ", map_task_count, ", generated ", num_of_inserts, " paris")
 	return nil
 }
 
@@ -178,5 +183,3 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 
 	return nil
 }
-
-
