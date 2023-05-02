@@ -146,7 +146,10 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	for i := 0; i < task.M; i++ {
 		paths[i] = makeURL("localhost:8080", task.SourceHosts[i])
 	}
-	mergeDatabases(paths, reduceInputFile(task.N), reduceTempFile(task.N))
+	db, err := mergeDatabases(paths, reduceInputFile(task.N), reduceTempFile(task.N))
+	if err != nil {
+		return err
+	}
 	for _, path := range paths {
 		defer os.Remove(path)
 	}
@@ -172,6 +175,7 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 		log.Printf("error creating databaseL %v", err)
 		return err
 	}
+	defer out.Close()
 	outs = append(outs, out)
 	insert, err := out.Prepare("insert into pairs (key, value) values (?, ?)")
 	if err != nil {
@@ -180,6 +184,47 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	}
 	inserts = append(inserts, insert)
 	//processs all the pairs
+	rows, err := db.Query("select key, value from pairs order by key, value")
+	if err != nil {
+		log.Printf("error in select query from database to split: %v", err)
+		return err
+	}
 
+	lastkey := ""
+	for rows.Next() {
+		messages := make(chan Pair)
+		values := make(chan string)
+		go func() {
+			var key, value string
+
+			if err := rows.Scan(&key, &value); err != nil {
+				log.Printf("error scanning row value: %v", err)
+			}
+			if lastkey == key || lastkey == "" {
+				lastkey = key
+				values <- value
+			} else {
+				close(values)
+				if err := client.Reduce(key, values, messages); err != nil {
+					log.Printf("error calling map: %v", err)
+				}
+			}
+
+		}()
+
+		for {
+			pair, isOkay := <-messages
+			if isOkay != true {
+				break
+			}
+			hash := fnv.New32()
+			hash.Write([]byte(pair.Key))
+			r := int(hash.Sum32() % uint32(task.R))
+			insert := inserts[r]
+			if _, err := insert.Exec(pair.Key, pair.Value); err != nil {
+				log.Printf("db error inserting row to output database: %v ", err)
+			}
+		}
+	}
 	return nil
 }
