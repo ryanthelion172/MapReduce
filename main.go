@@ -107,7 +107,17 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-
+	//Delete stuff
+	for i := 0; i < m; i++ {
+		//defer os.Remove(mapSourceFile(i))
+		for j := 0; j < r;j++ {
+			defer os.Remove(mapOutputFile(i,j))
+		}
+	}
+	for i := 0; i < r; i++ {
+		defer os.Remove(reduceOutputFile(i))
+		defer os.Remove(reduceInputFile(i))
+	}
 	// database, err := mergeDatabases(urls, "final_map.db", "temp.db")
 	// if err != nil {
 	// 	log.Print(err)

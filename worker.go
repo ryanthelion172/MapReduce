@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log"
-	"os"
 
 	//"path/filepath"
 
@@ -150,9 +149,6 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	if err != nil {
 		return err
 	}
-	for _, path := range paths {
-		defer os.Remove(path)
-	}
 	//create output database
 	var outs []*sql.DB
 	var inserts []*sql.Stmt
@@ -239,6 +235,6 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 		log.Printf("db error iterating over inputs: %v", err)
 		return err
 	}
-	log.Print("reduce task processed " , num_of_inserts, " keys and ", reduce_task_count, "values, generated ", num_of_inserts, " pairs")
+	log.Print("reduce task processed " , num_of_inserts, " keys and ", reduce_task_count, " values, generated ", num_of_inserts, " pairs")
 	return nil
 }
