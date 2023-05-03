@@ -136,7 +136,7 @@ func (task *MapTask) Process(tempdir string, client Interface) error {
 		log.Printf("db error iterating over inputs: %v", err)
 		return err
 	}
-	log.Print("map task processed ", map_task_count, ", generated ", num_of_inserts, " paris")
+	log.Print("map task processed ", map_task_count, ", generated ", num_of_inserts, " pairs")
 	return nil
 }
 
@@ -194,14 +194,18 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 	valChan := make(chan string)
 	messages := make(chan Pair)
 
+	reduce_task_count := 0
+	num_of_inserts := 0
 	for rows.Next() {
 
+		reduce_task_count += 1
 		var key, value string
 		if err := rows.Scan(&key, &value); err != nil {
 			log.Printf("error scanning row value: %v", err)
 		}
 
 		if lastkey == "" {
+			num_of_inserts += 1
 			lastkey = key
 			go func() {
 				if err := client.Reduce(key, valChan, messages); err != nil {
@@ -234,6 +238,6 @@ func (task *ReduceTask) Process(tempdir string, client Interface) error {
 		log.Printf("db error iterating over inputs: %v", err)
 		return err
 	}
-
+	log.Print("reduce task processed " , num_of_inserts, " keys and ", reduce_task_count, ", generated ", num_of_inserts, " pairs")
 	return nil
 }

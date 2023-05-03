@@ -47,8 +47,8 @@ func (c Client) Reduce(key string, values <-chan string, output chan<- Pair) err
 func main() {
 	runtime.GOMAXPROCS(1)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	m := 1
-	r := 1
+	m := 5
+	r := 3
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -103,7 +103,7 @@ func main() {
 	for i := 0; i < r; i++ {
 		paths[i] = makeURL("localhost:8080", reduceOutputFile(i))
 	}
-	_, err = mergeDatabases(paths, exPath+"final.db", reduceTempFile(r))
+	_, err = mergeDatabases(paths, exPath+"/final.db", reduceTempFile(r))
 	if err != nil {
 		log.Print(err)
 	}
