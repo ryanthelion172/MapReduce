@@ -110,8 +110,8 @@ func main() {
 	//Delete stuff
 	for i := 0; i < m; i++ {
 		//defer os.Remove(mapSourceFile(i))
-		for j := 0; j < r;j++ {
-			defer os.Remove(mapOutputFile(i,j))
+		for j := 0; j < r; j++ {
+			defer os.Remove(mapOutputFile(i, j))
 		}
 	}
 	for i := 0; i < r; i++ {
