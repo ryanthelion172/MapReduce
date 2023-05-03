@@ -66,7 +66,6 @@ func main() {
 	}
 	var myInterface Interface = &Client{}
 	for i := 0; i < m; i++ {
-		log.Printf("%d Map", i)
 		//url := makeURL("localhost:8080", slice_of_source_files[i])
 		map_thing := MapTask{
 			M:          m,
@@ -86,7 +85,6 @@ func main() {
 		}
 	}()
 	for i := 0; i < r; i++ {
-		log.Printf("%d Reduce", i)
 		sourceHost := make([]string, m)
 		for j := range sourceHost {
 			sourceHost[j] = mapOutputFile(j, i)
@@ -109,7 +107,7 @@ func main() {
 	}
 	//Delete stuff
 	for i := 0; i < m; i++ {
-		//defer os.Remove(mapSourceFile(i))
+		defer os.Remove(mapSourceFile(i))
 		for j := 0; j < r;j++ {
 			defer os.Remove(mapOutputFile(i,j))
 		}
